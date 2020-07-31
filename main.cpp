@@ -40,7 +40,7 @@ void usage() {
     printf("sample: send-arp-test wlan0\n");
 }
 
-void getmac(char * interface, unsigned char * mac) {
+void get_my_mac(char * interface, unsigned char * mac) {
     int sock = socket(PF_INET, SOCK_DGRAM, 0);
     struct ifreq req;
     int i = 0;
@@ -60,6 +60,27 @@ void getmac(char * interface, unsigned char * mac) {
     memcpy(mac, (unsigned char *)req.ifr_hwaddr.sa_data, 6);
     close(sock);
 }
+
+void get_my_ip(char* ip_buffer, char * interface){
+    int fd;
+    struct ifreq ifr;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    /* I want to get an IPv4 IP address */
+    ifr.ifr_addr.sa_family = AF_INET;
+
+    /* I want IP address attached to "eth0" */
+    strncpy(ifr.ifr_name, interface, IFNAMSIZ-1);
+
+    ioctl(fd, SIOCGIFADDR, &ifr);
+
+    close(fd);
+
+    /* display result */
+    sprintf(ip_buffer,"%s", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+}
+
 
 void make_arp_packet(EthArpPacket* buf, uint8_t smac[], uint32_t sip, uint8_t tmac[], uint32_t tip, int op){
     EthArpPacket packet;
@@ -115,15 +136,19 @@ int main(int argc, char* argv[]){
     }
 
     unsigned char smac[6] = {0,};
-    getmac(argv[1], smac);
+    get_my_mac(argv[1], smac);
 
     unsigned char tmac[6] = {0, };
     memset(tmac, 0xFF, 6);
 
     uint32_t sip;
     uint32_t tip;
-    my_pton(argv[2], &sip);
-    my_pton(argv[3], &tip);
+
+    char ip_buffer[18];
+    get_my_ip(ip_buffer, argv[1]);
+
+    my_pton(ip_buffer, &sip);
+    my_pton(argv[2], &tip);
 
     EthArpPacket arp_packet;
 
@@ -146,7 +171,8 @@ int main(int argc, char* argv[]){
             break;
         }
     }
-    arp_packet.arp_.ar_tip = ((ntohl(arp_packet.arp_.ar_tip) >> 8) << 8) + 1;
+
+    my_pton(argv[3], &(arp_packet.arp_.ar_tip));
     arp_packet.arp_.ar_sip = ntohl(arp_packet.arp_.ar_sip);
 
     make_arp_packet(&arp_packet, arp_packet.arp_.ar_tmac, arp_packet.arp_.ar_tip, arp_packet.arp_.ar_smac, arp_packet.arp_.ar_sip, ARPOP_REPLY);
