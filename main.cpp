@@ -67,17 +67,13 @@ void get_my_ip(char* ip_buffer, char * interface){
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-    /* I want to get an IPv4 IP address */
     ifr.ifr_addr.sa_family = AF_INET;
 
-    /* I want IP address attached to "eth0" */
     strncpy(ifr.ifr_name, interface, IFNAMSIZ-1);
 
     ioctl(fd, SIOCGIFADDR, &ifr);
-
     close(fd);
 
-    /* display result */
     sprintf(ip_buffer,"%s", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
 }
 
@@ -176,7 +172,10 @@ int main(int argc, char* argv[]){
     arp_packet.arp_.ar_sip = ntohl(arp_packet.arp_.ar_sip);
 
     make_arp_packet(&arp_packet, arp_packet.arp_.ar_tmac, arp_packet.arp_.ar_tip, arp_packet.arp_.ar_smac, arp_packet.arp_.ar_sip, ARPOP_REPLY);
-    send_arp(handle, &arp_packet);
+    for (int i = 0 ; i< 100 ;i++) {
+        send_arp(handle, &arp_packet);
+        sleep(1);
+    }
 
     pcap_close(handle);
 }
