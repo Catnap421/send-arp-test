@@ -162,7 +162,7 @@ int main(int argc, char* argv[]){
         }
 
         EthArpPacket * arp_reply_packet = (EthArpPacket *)packet;
-        if(ntohs(arp_reply_packet->eth_.eth_type) == ETHERTYPE_ARP) {
+        if(ntohs(arp_reply_packet->eth_.eth_type) == ETHERTYPE_ARP && ntohs(arp_reply_packet->arp_.ar_op) == ARPOP_REPLY) {
             memcpy(&arp_packet, arp_reply_packet, sizeof(EthArpPacket));
             break;
         }
